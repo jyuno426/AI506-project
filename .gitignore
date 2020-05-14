@@ -1,0 +1,4 @@
+*.attrs
+
+.vscode/
+__pycache__/
