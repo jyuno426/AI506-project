@@ -56,7 +56,7 @@ def load_dataset():
     print("# of public_false:", len(public_false_data))
     print("# of private:", len(private_data))
 
-    return paper_author_data, public_true_data, public_false_data, private_data
+    return n, paper_author_data, public_true_data, public_false_data, private_data
 
 
 def make_tabular(n_total, coauthor_list, position_encode=False):
