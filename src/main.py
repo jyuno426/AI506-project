@@ -1,0 +1,9 @@
+from node_embedding import build_node_embedding
+from util import load_dataset, make_graph
+
+
+if __name__ == '__main__':
+    n, paper_author_data, public_true_data, public_false_data, private_data = load_dataset()
+    graph = make_graph(paper_author_data + public_true_data)
+    build_node_embedding(graph, dimensions=10, p=1, q=0.5,
+                         walk_length=10, num_walks=50, workers=4)

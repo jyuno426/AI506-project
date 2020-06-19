@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import load_dataset
+from util import load_dataset
 
 
 def set_to_str(_set):
@@ -153,9 +153,8 @@ class Expansion:
             w = edge[2]
             res += w
         return res / len(inner_edges)
-    
+
     def cn(self, inner_edges):
-        
 
 
 if __name__ == '__main__':

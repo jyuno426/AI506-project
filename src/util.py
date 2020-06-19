@@ -1,4 +1,5 @@
 import pandas as pd
+import networkx as nx
 
 
 def load_dataset():
@@ -59,6 +60,22 @@ def load_dataset():
     return n, paper_author_data, public_true_data, public_false_data, private_data
 
 
+def make_graph(coauthor_list):
+    """
+    Return networkx graph based on coauthor_list
+    Index of author starts from 1
+    """
+    graph = nx.Graph()
+
+    for coauthor in coauthor_list:
+        m = len(coauthor)
+        for i in range(m):
+            for j in range(i + 1, m):
+                graph.add_edge(coauthor[i], coauthor[j])
+
+    return graph
+
+
 def make_tabular(n_total, coauthor_list, position_encode=False):
     """
     Index of author starts from 1
@@ -80,3 +97,7 @@ def make_tabular(n_total, coauthor_list, position_encode=False):
                 author_dict[author_name][i] = 1
 
     return pd.DataFrame(data=author_dict)
+
+
+if __name__ == '__main__':
+    load_dataset()
