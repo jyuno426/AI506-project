@@ -1,3 +1,4 @@
+import json
 from node2vec import Node2Vec
 
 
@@ -23,3 +24,20 @@ def build_node_embedding(graph, dimensions=30, p=1, q=1, walk_length=10, num_wal
 
     # Save model for later use
     # model.save("../model/node_embedding")
+
+
+def node_embedding_text_to_json(filepath):
+    res = {}
+    with open(filepath, "r") as f:
+        f.readline()
+        for line in f.readlines():
+            elems = line.split()
+            res[int(elems[0])] = [float(x) for x in elems[1:]]
+
+    with open(filepath + ".json", "w") as f:
+        json.dump(res, f)
+
+
+if __name__ == '__main__':
+    node_embedding_text_to_json("../output/node_embedding_p1_q0.5")
+    node_embedding_text_to_json("../output/node_embedding_p1_q2")
