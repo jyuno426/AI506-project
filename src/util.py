@@ -65,6 +65,7 @@ def make_graph(coauthor_list):
     Return networkx graph based on coauthor_list
     Index of author starts from 1
     """
+    print("Make Graph ...")
     graph = nx.Graph()
 
     for coauthor in coauthor_list:
@@ -73,6 +74,7 @@ def make_graph(coauthor_list):
             for j in range(i + 1, m):
                 graph.add_edge(coauthor[i], coauthor[j])
 
+    print("Make Graph Done!")
     return graph
 
 
