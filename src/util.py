@@ -99,5 +99,37 @@ def make_tabular(n_total, coauthor_list, position_encode=False):
     return pd.DataFrame(data=author_dict)
 
 
+def get_pareto_front(points):
+    """
+    points: list of tuples of 2 items
+    """
+
+    res = []
+
+    points.sort()
+    for x, y in points:
+        while len(res) > 0:
+            if res[-1][0] <= x and res[-1][1] <= y:
+                res.pop()
+            else:
+                break
+        res.append((x, y))
+
+    return res
+
+
 if __name__ == '__main__':
-    load_dataset()
+    # load_dataset()
+    ll = []
+    import numpy as np
+    for i in range(100):
+        x = np.random.randint(1, 100)
+        y = np.random.randint(1, min(100, 3000/x))
+        ll.append((x, y))
+
+    import matplotlib.pyplot as plt
+
+    plt.plot([a[0] for a in ll], [a[1] for a in ll], 'bo')
+    res = get_pareto_front(ll)
+    plt.plot([a[0] for a in res], [a[1] for a in res], 'ro')
+    plt.savefig("pic.png")
