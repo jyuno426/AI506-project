@@ -189,10 +189,10 @@ if __name__ == '__main__':
     # dictionary 에 노드 넘버: vector값 저장
     s_dict = {}
     d_dict = {}
-    with open('../output/node_embedding_p1_q0.5.json') as json_1:
+    with open('../output/random_node_embedding_p1_q0.5.json') as json_1:
         s_dict = json.load(json_1)
 
-    with open('../output/node_embedding_p1_q2.json') as json_1:
+    with open('../output/random_node_embedding_p1_q2.json') as json_1:
         d_dict = json.load(json_1)
 
     keys = list(s_dict.keys())

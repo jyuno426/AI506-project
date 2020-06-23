@@ -18,7 +18,7 @@ def build_node_embedding(graph, dimensions=30, p=1, q=1, walk_length=10, num_wal
     # `diemnsions` and `workers` are automatically passed (from the Node2Vec constructor)
     model = node2vec.fit(window=10, min_count=1, batch_words=4)
 
-    filepath = "../output/node_embedding_p{}_q{}".format(p, q)
+    filepath = "../output/random_node_embedding_p{}_q{}".format(p, q)
 
     # Save embeddings for later use
     model.wv.save_word2vec_format(filepath)
@@ -41,5 +41,5 @@ def node_embedding_text_to_json(filepath):
 
 
 if __name__ == '__main__':
-    node_embedding_text_to_json("../output/node_embedding_p1_q0.5")
-    node_embedding_text_to_json("../output/node_embedding_p1_q2")
+    node_embedding_text_to_json("../output/random_node_embedding_p1_q0.5")
+    node_embedding_text_to_json("../output/random_node_embedding_p1_q2")
