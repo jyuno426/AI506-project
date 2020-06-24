@@ -3,10 +3,16 @@ import json
 from node2vec import Node2Vec
 
 
-def build_node_embedding(graph, p=1, q=1, dimensions=30, walk_length=10, num_walks=50, workers=4, name="node_embedding", temp_folder=None):
+def build_node_embedding(graph, p=1, q=1, dimensions=30, walk_length=10, num_walks=50, workers=4, temp_folder=None):
+    """
+    Build node embedding using Node2Vec Library which is a wrapper of gensim word2vec.
+    """
 
-    filepath = "../output/{}_p{}_q{}_dim{}_wl{}_nw{}".format(
-        name, p, q, dimensions, walk_length, num_walks)
+    if not os.path.exists("../output/node_embedding"):
+        os.makedirs("../output/node_embedding")
+
+    filepath = "../output/node_embedding/p{}_q{}_dim{}_wl{}_nw{}".format(
+        p, q, dimensions, walk_length, num_walks)
 
     print("Build Node embedding at {} ...".format(filepath))
 
