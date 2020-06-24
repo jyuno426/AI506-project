@@ -1,3 +1,4 @@
+import random
 import pandas as pd
 import networkx as nx
 
@@ -99,6 +100,17 @@ def make_tabular(n_total, coauthor_list, position_encode=False):
                 author_dict[author_name][i] = 1
 
     return pd.DataFrame(data=author_dict)
+
+
+def get_two_random(a, b):
+    """
+    Return two distinct random integers i, j in [a, b] s.t. i < j.
+    """
+    i, j = 0, 0
+    while i == j:
+        i = random.randint(a, b)
+        j = random.randint(a, b)
+    return min(i, j), max(i, j)
 
 
 if __name__ == '__main__':

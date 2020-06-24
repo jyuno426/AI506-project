@@ -3,6 +3,7 @@ import random
 import numpy as np
 import networkx as nx
 
+from moea import NMOEA
 from node_embedding import build_node_embedding
 from util import load_dataset, make_graph
 
@@ -35,8 +36,8 @@ if __name__ == '__main__':
                                   walk_length=80, num_walks=10, workers=10)
 
     # Run NMOEA
-    # nmoea = NMOEA(graph, s_dict, d_dict, init_popul)
-    # nmoea.run()
+    nmoea = NMOEA(graph, s_dict, d_dict)
+    nmoea.run()
 
     """
     # Make random graph
