@@ -102,7 +102,7 @@ def make_tabular(n_total, coauthor_list, position_encode=False):
     return pd.DataFrame(data=author_dict)
 
 
-def get_two_random(a, b):
+def get_two_random(a, b, ordering=True):
     """
     Return two distinct random integers i, j in [a, b] s.t. i < j.
     """
@@ -110,7 +110,41 @@ def get_two_random(a, b):
     while i == j:
         i = random.randint(a, b)
         j = random.randint(a, b)
-    return min(i, j), max(i, j)
+
+    if ordering:
+        return min(i, j), max(i, j)
+    else:
+        return i, j
+
+
+def partition(list_in, n):
+    """
+    Partition input list into n chunks in nearly equal size
+    """
+    list_copy = list_in.copy()
+    random.shuffle(list_copy)
+    return [list_copy[i::n] for i in range(n)]
+
+
+def compute_accuracy(true_labels, predictions):
+    tp, tn, fp, fn = 0, 0, 0, 0
+    assert len(true_labels) == len(predictions)
+    for i in range(len(true_labels)):
+        if true_labels[i] == 1 and predictions[i] == 1:
+            tp += 1
+        elif true_labels[i] == 1 and predictions[i] == 0:
+            fn += 1
+        elif true_labels[i] == 0 and predictions[i] == 1:
+            fp += 1
+        elif true_labels[i] == 0 and predictions[i] == 0:
+            tn += 1
+        else:
+            raise Exception("wrong labels: {}, {}".format(
+                true_labels[i], predictions[i]))
+
+    print(tp, tn, fp, fn)
+    acc = (tp + tn) / (tp + tn + fp + fn)
+    print("acc: {}%".format(round(acc * 100, 2)))
 
 
 if __name__ == '__main__':
