@@ -103,10 +103,10 @@ def mutation(child):
     return new_children
 
 def fit_eval(child):
-    global s_dict, d_dict, sum_of_all_d, adj_mat, all_nodes
+    global s_dict, d_dict,  adj_dict, all_nodes #,sum_of_all_d
     s_tot = 0
     d_tot = 0
-    #print("new child--")
+
     for cluster in child:
         s_per_cluster = 0
         if len(cluster)==1: # 한개일때 fit VALUE 너무 커지는데 어떻게 할지??
@@ -137,11 +137,11 @@ def fit_eval(child):
         l = 0
         for idx, node1 in enumerate(cluster):
             for node2 in all_nodes: 
-                if node2 not in cluster[idx+1:] :
-                    l += adj_mat[int(node1)-1, int(node2)-1]
+                if node2 not in cluster[idx+1:] and str(node2) in adj_dict[str(node1)] :
+                    l += 1
         d_tot += d_per_cluster
 
-    d_tot = (d_tot + sum_of_all_d )/l
+    d_tot = (d_tot + 0 )/l
     # need to savfe s_dict, d_dict here!
     
     return [s_tot, d_tot]
@@ -206,17 +206,18 @@ if __name__ == '__main__':
         del d_dict[k]
 
     # used for caculating D
-    sum_of_all_d = 0
+    #sum_of_all_d = 0
     all_nodes = list(d_dict.keys())
 
+    '''
     for idx, node1 in enumerate(all_nodes):
         for node2 in all_nodes[idx+1:]:
             sum_of_all_d += 1-( np.dot(d_dict[node1], d_dict[node2]) / (np.linalg.norm(d_dict[node1]) * np.linalg.norm(d_dict[node2])))
-
-    # adj_mat[i,j] <- edge between node i+1 and node j+1
-    adj_mat = np.load("../output/adj_mat.npy")
-
+    '''
+    with open("../output/adj_dict.json") as json_file:
+        adj_dict= json.load(json_file)
     
+
     population=[]
 
     ### fill the line 5,6 of given pseudo code. #### modify child!!
