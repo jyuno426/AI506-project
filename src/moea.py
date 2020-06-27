@@ -1,275 +1,290 @@
 import random
-import copy
 import numpy as np
-import json
-import pickle
+from numpy.linalg import norm
+
+from util import get_two_random
+
+random.seed(0)
+np.random.seed(0)
 
 
+class NMOEA:
+    def __init__(self, graph, s_dict, d_dict, population_size=3, max_community_cnt=1000):
+        self.graph = graph
+        self.nodes = sorted(list(graph.nodes()))
+        self.s_dict = s_dict
+        self.d_dict = d_dict
+        self.population_size = population_size
+        self.max_community_cnt = max_community_cnt
 
-def remove_subset(children):
-    remove_list = []
-    for idx, c1 in enumerate(children):
-        for c2 in children[idx+1:]:
-            if (set(c1) <= set(c2)):
-                remove_list.append(c1)
-            elif (set(c1)>= set(c2)):
-                remove_list.append(c2)
-    children = [e for e in children if e not in remove_list]
-    return children
+    def run(self):
+        """
+        Run NMOEA algorithm based on NSGA-2
+        """
 
-def crossover(child):
-    # pick two random clusters
-    c1, c2 = random.sample(child, 2) 
-    child.remove(c1)
-    child.remove(c2)
+        print("Run NMOEA algorithm!")
 
-    #remove if they have an intersection
-    inter = set(c1).intersection(set(c2))
-    set_c1 = set(c1) - inter
-    set_c2 = set(c2) - inter
-    
+        # Random initialization of population
+        population = []
+        for _ in range(self.population_size):
+            new_individual = self.nodes.copy()
+            random.shuffle(new_individual)
+            population.append(new_individual)
+        update_count = self.population_size
 
-    # 나중에 연결된 부분만 고르도록 해도 될듯
-    c1_len = random.randint(1, len(set_c1))
-    c2_len = random.randint(1, len(set_c2))
+        it = 1
+        while update_count > 0:
+            for i in range(self.population_size):
+                # Except the first loop, population is sorted by fast-non-dominated-sort.
+                # Select more desirable one from two random individuals.
+                j = get_two_random(0, self.population_size - 1)[0]
+                new_individual = self.reverse_operator(population[i])
+                population.append(new_individual)
+                print("Iter:{} updating: {}/{}".format(it,
+                                                       i + 1, self.population_size))
 
-    new_c1 = set(random.sample(set_c1, c1_len))
-    new_c2 = set(random.sample(set_c2, c2_len))
-    
-    left_c1 = set_c1 - new_c1
-    left_c2 = set_c2 - new_c2
+            population, update_count = self.fast_non_dominated_sort(population)
 
-    # make new crossovered cluster
-    left_c1.update(new_c2, inter)
-    left_c2.update(new_c1, inter)
+            print("Iter:{}, population is updated by {}".format(it, update_count))
 
-    child.append(list(left_c1))
-    child.append((list(left_c2)))
-    child = remove_subset(child)
-    #print("after remove", child)
-    return child
+    def reverse_operator(self, individual):
+        """
+        Individual is a permutation of all nodes
+        Reverse a random segement in the given individual
+        """
+        assert len(individual) == len(self.nodes)
 
-def mutation(child):
-    new_children = []
-    ## 1. make new cluster ##
-    c1 = random.sample(child, 1)[0]
-    child1 = copy.deepcopy(child)
-    #print(c1)
-    
+        i, j = get_two_random(0, len(individual) - 1)
+        return individual[: i] + list(reversed(individual[i: j + 1])) + individual[j + 1:]
 
-    # pick some nodes
-    if len(c1)!= 1:
-        child1.remove(c1)
-        c1_len = random.randint(1, len(c1)-1)
-        new = random.sample(c1, c1_len)
-        new2 = list(set(c1) - set(new))
+    def fast_non_dominated_sort(self, population):
+        assert len(population) == 2 * self.population_size
 
-        child1.append(new)
-        child1.append(new2)
-        child1 = remove_subset(child1)
-        new_children.append(child1)
-        #print("1.",child1)
-        
+        # print("Fast non dominated sort")
 
+        candidates = [self.fitness(individual) for individual in population]
 
-    ## 2. remove and add to other cluster ##
-    child2 = copy.deepcopy(child)
-    c1, c2 = random.sample(child2, 2)
-    
-    if len(c1)!= 1:
-        child2.remove(c1)
-        child2.remove(c2)
-        c1_len = random.randint(1, len(c1)-1)
-        new = random.sample(c1, c1_len)
-        c1 =list(set(c1) - set(new))
-        c2 = list(set(c2).union(new))
-        child2+= [c1, c2]
-        child2 = remove_subset(child2)
-        new_children.append(child2)
-        #print("2",child2)
+        n = 2 * self.population_size
+        dominate = [[] for _ in range(n)]
+        counter = [0] * n
+        rank = [-1] * n
+        rank_store = [[]]
 
-    ## 3. merge ##
-    child3 = copy.deepcopy(child)
-    c1, c2 = random.sample(child3, 2)
-    c3 = list(set(c1).union(set(c2)))
-    child3.remove(c1)
-    child3.remove(c2)
-    child3.append(c3)
-    child3 = remove_subset(child3)
-    new_children.append(child3)
-    #print("3",child3)
+        for i, p in enumerate(candidates):
+            for j, q in enumerate(candidates[i+1:]):
+                if p != q and p[0] >= q[0] and p[1] >= q[1]:  # if p dominates q
+                    dominate[i].append(j)
+                    counter[j] += 1
+                else:
+                    dominate[j].append(i)
+                    counter[i] += 1
 
+            if counter[i] == 0:  # i must be a pareto-front
+                rank[i] = 0
+                rank_store[0].append(i)
 
-    return new_children
+        k = 0
+        while len(rank_store[k]) > 0:
+            assert len(rank_store) == k + 1
+            rank_store.append([])
+            for i in rank_store[k]:
+                for j in dominate[i]:
+                    counter[j] -= 1
+                    if counter[j] == 0:
+                        rank[j] = k + 1
+                        rank_store[k + 1]. append(i)
+            k += 1
 
-def fit_eval(child):
-    global s_dict, d_dict,  adj_dict, all_nodes #,sum_of_all_d
-    s_tot = 0
-    d_tot = 0
+        k, size = 0, 0
+        new_population_idx = []
+        while size < self.population_size:
+            m = len(rank_store[k])
+            crowding_distance = [0] * m
 
-    for cluster in child:
-        s_per_cluster = 0
-        if len(cluster)==1: # 한개일때 fit VALUE 너무 커지는데 어떻게 할지??
-            s_per_cluster =1
-            s_tot += s_per_cluster
-            continue
-        
-        for idx, node1 in enumerate(cluster):
-            for node2 in cluster[idx+1:]:
-                s_per_cluster += np.dot(s_dict[node1], s_dict[node2]) / (np.linalg.norm(s_dict[node1]) * np.linalg.norm(s_dict[node2]))
-        
-        s_per_cluster = s_per_cluster/( len(cluster)* (len(cluster) -1) ) 
-        s_tot += s_per_cluster
+            rank_store[k].sort(key=lambda i: candidates[i][0])
 
-    for cluster in child:
-        d_per_cluster = 0
-        if len(cluster)==1: # 한개일때 fit VALUE 너무 커지는데 어떻게 할지??
-            d_per_cluster =0
-            d_tot += d_per_cluster
-            continue
-        
-        for idx, node1 in enumerate(cluster):
-            for node2 in cluster[idx+1:]:
-                ## 여기 맞는지 물어보고 다시짜기!!
-                d_per_cluster -= 1-( np.dot(d_dict[node1], d_dict[node2]) / (np.linalg.norm(d_dict[node1]) * np.linalg.norm(d_dict[node2])))
-        
-        # have to calculate the number of edges !!
-        l = 0
-        for idx, node1 in enumerate(cluster):
-            for node2 in all_nodes: 
-                if node2 not in cluster[idx+1:] and str(node2) in adj_dict[str(node1)] :
-                    l += 1
-        d_tot += d_per_cluster
+            crowding_distance[0] = 1e9
+            crowding_distance[m - 1] = 1e9
 
-    d_tot = (d_tot + 0 )/l
-    # need to savfe s_dict, d_dict here!
-    
-    return [s_tot, d_tot]
+            f0_min = min([candidates[i][0] for i in rank_store[k]])
+            f0_max = max([candidates[i][0] for i in rank_store[k]])
+            f1_min = min([candidates[i][1] for i in rank_store[k]])
+            f1_max = max([candidates[i][1] for i in rank_store[k]])
 
-def pareto_front(popul):
-    # one of popul  = list of communities
-    # return the pareto_front (list) which are subset of population
-    # fit_eval(one of population)  = [s_fit, d_fit]
+            scale0 = 1 / (f0_max - f0_min)
+            scale1 = 1 / (f1_max - f1_min)
 
-    max_fits = []
-    fit_dict = {}
-    for p in popul:
-        val = fit_eval(p)
-        fit_dict[tuple(val)] = p
-        max_fits.append(val)
+            for j in range(1, m - 1):
+                i_m = rank_store[k][j - 1]
+                i_p = rank_store[k][j + 1]
 
-    max_fits.sort()
-    res= []
+                d0 = (candidates[i_p][0] - candidates[i_m][0]) * scale0
+                d1 = (candidates[i_m][1] - candidates[i_p][1]) * scale1
+                crowding_distance[j] = d0 + d1
 
-    for x,y in max_fits:
-        while len(res) >0:
-            if res[-1][0] <= x and res[-1][1]<=y:
-                res.pop()
-            else:
-                break
-        res.append((x,y))
+            new_population_idx += sorted(rank_store[k],
+                                         key=lambda i: -crowding_distance[i])
 
-    '''
+            size += len(rank_store[k])
+            k += 1
 
-    x = [f[0] for f,p in res]
-    y = [f[1] for f,p in res]
-    import matplotlib.pyplot as plt
-    plt.scatter(x,y)
-    plt.show()
-    '''
-    print("pareto front value pairs:",[f for f in res])
-    new_popul = [fit_dict[k] for k in res]
-    
-    return new_popul
+        new_population_idx = new_population_idx[:self.population_size]
+        new_population = [population[i] for i in new_population_idx]
 
-if __name__ == '__main__':   
+        update_count = 0
+        for i in new_population_idx:
+            if i >= self.population_size:
+                update_count += 1
 
-    MaxCount = 1
+        return new_population, update_count
 
-    # dictionary 에 노드 넘버: vector값 저장
-    s_dict = {}
-    d_dict = {}
-    with open('../output/random_node_embedding_p1_q0.5.json') as json_1:
-        s_dict = json.load(json_1)
+    def fitness(self, individual):
+        """
+        Return a tuple of two fitness values for the given individual
+        """
 
-    with open('../output/random_node_embedding_p1_q2.json') as json_1:
-        d_dict = json.load(json_1)
+        # print("Start fitness")
 
-    keys = list(s_dict.keys())
-    for k in keys:
-        s_dict[int(k)] = s_dict[k]
-        del s_dict[k]
+        s_tot, d_tot = 0, 0
+        communities = self.decode_communities(individual)
 
-    keys = list(d_dict.keys())
-    for k in keys:
-        d_dict[int(k)] = d_dict[k]
-        del d_dict[k]
+        # print("Decode end")
 
-    # used for caculating D
-    #sum_of_all_d = 0
-    all_nodes = list(d_dict.keys())
+        for i, community in enumerate(communities):
+            # print(i, "/", len(communities), "community size:", len(community))
+            s_per_comm, d_per_comm = 0, 0
+            m = len(community)
 
-    '''
-    for idx, node1 in enumerate(all_nodes):
-        for node2 in all_nodes[idx+1:]:
-            sum_of_all_d += 1-( np.dot(d_dict[node1], d_dict[node2]) / (np.linalg.norm(d_dict[node1]) * np.linalg.norm(d_dict[node2])))
-    '''
-    with open("../output/adj_dict.json") as json_file:
-        adj_dict= json.load(json_file)
-    
+            if m == 1:  # 한개일때 fit VALUE 너무 커지는데 어떻게 할지??
+                s_tot += 0.1
+                d_tot += 0.1
+                continue
 
-    population=[]
+            # for idx, node1 in enumerate(community):
+            #     for node2 in community[idx + 1:]:
+            sample_cnt = min(1000, m)
+            for _ in range(sample_cnt):
+                ii, jj = get_two_random(0, m - 1)
+                node1, node2 = community[ii], community[jj]
+                v1, v2 = self.s_dict[node1], self.s_dict[node2]
+                s_per_comm += np.dot(v1, v2) / (norm(v1) * norm(v2))
 
-    ### fill the line 5,6 of given pseudo code. #### modify child!!
-    #Child = [[1,2],[2,3,4],[5]
-    child = np.load("../output/co_author.npy", allow_pickle=True) 
-    child_list = []
-    for i in range(len(child)):
-        child_list.append(child[i])
-    population.append(child_list)
+                v1, v2 = self.d_dict[node1], self.d_dict[node2]
+                d_per_comm += 1 - np.dot(v1, v2) / (norm(v1) * norm(v2))
 
-    for count in range(0, MaxCount): 
-        picked_child = random.choice(population) # it does not remove original child.
+            s_tot += s_per_comm / sample_cnt
+            d_tot += d_per_comm / sample_cnt
 
-        crossover_child = crossover(picked_child)
-        population.append(crossover_child)
-        mutation_children = []
-        for c in population:
-            mutation_children += mutation(c)
-        
-        population += mutation_children
+        s_tot /= len(communities)
+        d_tot /= len(communities)
 
+        return (s_tot, d_tot)
 
-        print("Iter: {}, # of popul:{}".format(count, len(population)))
-        population = pareto_front(population)
-        print("# of pf:{}".format( len(population)))
-        print("------------------------")
-        
-    # save pareto front to txt file
-    g = open("../output/fin_popul_{}_iter.txt".format(MaxCount), 'w')
+    def decode_communities(self, individual, alpha=1):
+        """
+        Decode a permutation of nodes (individual) to list of communities
+        """
 
-    for i, p in enumerate(population):
-        g.write('p'+str(i) +'\n')
-        for c in p:
-            g.write(" ".join(list(map(str, c)))+'\n')
-    g.close()
-    
-    check = []
-    for p in population:
-        for clusters in p:
-            check.append(set(clusters))
-    
-    # for test
-    f = open("../output/test.txt", 'r')
-    lines = f.readlines()
-    for line in lines:
-        cnt = 0
-        inp = set(map(int, line.strip().split(' ')))
-        for cluster in check:
-            if inp <= cluster:
-                cnt +=1
-        print(cnt/len(check))
+        def community_fitness(int_deg, ext_deg):
+            return int_deg / ((int_deg + ext_deg) ** alpha)
 
-    f.close()
+        # print("Start decode")
+        communities = []
+        internal_degree = []
+        external_degree = []
+        node_to_community = {i: [] for i in self.nodes}
 
+        for i, v in enumerate(individual):
+            # print(i, "/", len(individual), "community cnt:", len(communities))
 
+            neighbors = list(self.graph.adj[v].keys())
+
+            check = False
+
+            community_candidates = []
+            for neighbor in neighbors:
+                community_candidates += node_to_community[neighbor]
+            community_candidates = sorted(list(set(community_candidates)))
+
+            # for j in range(len(communities)): # Too slow
+            for j in community_candidates:
+                int_deg_add, ext_deg_add = 0, 0
+                for neighbor in neighbors:
+                    if neighbor in communities[j]:
+                        int_deg_add += 1
+                        ext_deg_add -= 1
+                    else:
+                        ext_deg_add += 1
+
+                f1 = community_fitness(internal_degree[j], external_degree[j])
+                f2 = community_fitness(
+                    internal_degree[j] + int_deg_add, external_degree[j] + ext_deg_add)
+
+                if f1 < f2:
+                    communities[j].add(v)
+                    node_to_community[v].append(j)
+                    internal_degree[j] += int_deg_add
+                    external_degree[j] += ext_deg_add
+                    check = True
+
+            if not check:
+                # if random.random() > 0.5:
+                #     j = random.randint(0, len(communities) - 1)
+                #     communities[j].add(v)
+
+                #     for neighbor in neighbors:
+                #         if neighbor in communities[j]:
+                #             internal_degree[j] += 1
+                #             ext_deg_add -= 1
+                #         else:
+                #             external_degree[j] += 1
+                # else:
+                communities.append(set([v]))
+                node_to_community[v].append(len(communities) - 1)
+                internal_degree.append(0)
+                external_degree.append(len(neighbors))
+
+        # Use hash table (dict) instead of list for fast deletion
+        communities = {i: c for i, c in enumerate(communities)}
+
+        print("community cnt:", len(communities))
+
+        # while len(communities) > self.max_community_cnt:
+        #     candidates = []
+        #     for _ in range(10):
+        #         i, j = get_two_random(0, len(communities) - 1)
+        #         ci, cj = communities[i], communities[j]
+        #         overlap = len(ci.intersection(cj)) / min(len(ci), len(cj))
+        #         candidates.append((overlap, len(ci) + len(cj), i, j))
+
+        #     _, _, i, j = max(candidates)
+        #     communities[i] = communities[i].union(communities[j])
+        #     del communities[j]
+
+        return [list(c) for c in communities.values()]
+
+    # def community_fitness(self, community, new_node=None, alpha=1):
+    #     """
+    #     """
+    #     internal_degree, external_degree = 0, 0
+    #     for edge in self.graph.edges(community):
+    #         u, v = edge
+    #         if u in community and v in community:
+    #             internal_degree += 1
+    #         else:
+    #             external_degree += 1
+
+    #     res1 = internal_degree / ((internal_degree + external_degree) ** alpha)
+
+    #     if new_node is None or new_node in community:
+    #         return res1
+
+    #     for neighbor in self.graph.adj[new_node].keys():
+    #         if neighbor in community:
+    #             internal_degree += 1
+    #             external_degree -= 1
+    #         else:
+    #             external_degree += 1
+
+    #     res2 = internal_degree / ((internal_degree + external_degree) ** alpha)
+    #     return res1, res2
