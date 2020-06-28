@@ -1,6 +1,7 @@
 import random
 import pandas as pd
 import networkx as nx
+from sklearn import preprocessing
 
 
 def load_dataset():
@@ -145,6 +146,32 @@ def compute_accuracy(true_labels, predictions):
     print(tp, tn, fp, fn)
     acc = (tp + tn) / (tp + tn + fp + fn)
     print("acc: {}%".format(round(acc * 100, 2)))
+
+
+def means(_list_1d):
+    list_1d = [x for x in _list_1d if x != 0]
+    if len(list_1d) == 0:
+        return [0, 0, 0]
+
+    am, gm, hm = 0, 1, 0
+    for l in list_1d:
+        assert l != 0
+        am += l
+        gm *= pow(l, 1 / len(list_1d))
+        hm += 1 / l
+
+    am /= len(list_1d)
+    if hm > 0:
+        hm = len(list_1d) / hm
+
+    return [am, gm, hm]
+
+
+def standardize(feature_matrix):
+    df = pd.DataFrame(feature_matrix)
+    standard_scaler = preprocessing.StandardScaler()
+    standard_scaler.fit(df)
+    return standard_scaler.transform(df)
 
 
 if __name__ == '__main__':

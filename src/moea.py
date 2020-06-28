@@ -5,7 +5,7 @@ from tqdm import tqdm
 from sklearn import svm
 from numpy.linalg import norm
 from matplotlib import pyplot as plt
-from util import get_two_random, partition
+from util import get_two_random, partition, means, standardize
 
 random.seed(0)
 np.random.seed(0)
@@ -197,6 +197,54 @@ class NMOEA:
 
         return new_population, fitness_list, update_count
 
+    def fitness_community(self, community, random_sample=True):
+        m = len(community)
+        if m == 1:  # 한개일때 fit VALUE 너무 커지는데 어떻게 할지??
+            return 0.1, 0.1
+
+        def fitness_pair(node1, node2):
+            if node1 not in self.s_dict:
+                return 0, 0
+            if node2 not in self.s_dict:
+                return 0, 0
+            if node1 not in self.d_dict:
+                return 0, 0
+            if node2 not in self.d_dict:
+                return 0, 0
+
+            v1, v2 = self.s_dict[node1], self.s_dict[node2]
+            s = np.dot(v1, v2) / (norm(v1) * norm(v2))
+
+            v1, v2 = self.d_dict[node1], self.d_dict[node2]
+            d = 1 - np.dot(v1, v2) / (norm(v1) * norm(v2))
+
+            return s, d
+
+        s_tot, d_tot = 0, 0
+        _community = list(community)
+
+        if random_sample:
+            sample_cnt = min(self.sample_cnt, m)
+            for _ in range(sample_cnt):
+                ii, jj = get_two_random(0, m - 1)
+                node1, node2 = _community[ii], _community[jj]
+                ss, dd = fitness_pair(node1, node2)
+                s_tot += ss
+                d_tot + dd
+            s_tot /= sample_cnt
+            d_tot /= sample_cnt
+        else:
+            for idx, node1 in enumerate(community):
+                for node2 in community[idx + 1:]:
+                    ss, dd = fitness_pair(node1, node2)
+                    s_tot += ss
+                    d_tot + dd
+            n = len(community) * (len(community) - 1) / 2
+            s_tot /= n
+            d_tot /= n
+
+        return s_tot, d_tot
+
     def fitness(self, individual):
         """
         Return a tuple of two fitness values for the given individual
@@ -249,7 +297,7 @@ class NMOEA:
 
         return [list(c) for c in community_table.values()]
 
-    def get_features(self, population, coauthor_list):
+    def gather_pareto_front_communities(self, population):
         candidates = []
         for indiv in tqdm(population, desc="Compute fitness"):
             evaluation = self.fitness(indiv)
@@ -272,8 +320,13 @@ class NMOEA:
                 if len(community) >= 2:
                     communities.append(set(community))
 
+        return communities
+
+    def get_n_in_out(self, population, coauthor_list):
         # communities = [set(c) for c in self.decode_communities(
         #     random.choice(population))]
+
+        communities = self.gather_pareto_front_communities(population)
 
         res = []
         for authors in tqdm(coauthor_list, desc="Compute features: n_in, n_out"):
@@ -293,6 +346,47 @@ class NMOEA:
 
         return np.array(res)
 
+    def get_features(self, population, coauthor_list):
+        """
+        """
+        communities = self.gather_pareto_front_communities(population)
+
+        res = []
+        for authors in tqdm(coauthor_list, desc="Compute features"):
+            comm_len_1 = []
+            comm_len_2 = []
+            # comm_fit_s_1 = []
+            # comm_fit_d_1 = []
+            # comm_fit_s_2 = []
+            # comm_fit_d_2 = []
+            for i, author1 in enumerate(authors):
+                for community in communities:
+                    if author1 in community:
+                        s, d = self.fitness_community(community)
+                        # comm_fit_s_1.append(s)
+                        # comm_fit_d_1.append(d)
+                        comm_len_1.append(len(community))
+                        for author2 in authors[i + 1:]:
+                            if author2 in community:
+                                # comm_fit_s_2.append(s)
+                                # comm_fit_d_2.append(d)
+                                comm_len_2.append(len(community))
+
+            mean_1 = means(comm_len_1)
+            mean_2 = means(comm_len_2)
+            # mean_fit_s_1 = means(comm_fit_s_1)
+            # mean_fit_d_1 = means(comm_fit_d_1)
+            # mean_fit_s_2 = means(comm_fit_s_2)
+            # mean_fit_d_2 = means(comm_fit_d_2)
+
+            features = [len(authors), len(comm_len_1),
+                        len(comm_len_2)] + mean_1 + mean_2
+            # + mean_fit_s_1 + mean_fit_d_1 + mean_fit_s_2 + mean_fit_d_2
+
+            res.append(features)
+
+        return np.array(standardize(res))
+
     def fit(self, population, coauthor_list, labels):
         # plt.figure(figsize=(7, 7))
         # plt.plot(true_n_in, true_n_out, "bo")
@@ -302,7 +396,8 @@ class NMOEA:
         X = self.get_features(population, coauthor_list)
         y = np.array(labels)
 
-        self.predictor = svm.SVC(kernel='linear', C=1.0)
+        print("Fitting svm ...")
+        self.predictor = svm.SVC()
         self.predictor.fit(X, y)
         return self.predictor.predict(X)
 
