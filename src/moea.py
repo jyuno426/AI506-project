@@ -7,6 +7,7 @@ from numpy.linalg import norm
 from matplotlib import pyplot as plt
 from util import get_two_random, partition, means, standardize
 
+import mglearn
 random.seed(0)
 np.random.seed(0)
 
@@ -332,6 +333,13 @@ class NMOEA:
         for authors in tqdm(coauthor_list, desc="Compute features: n_in, n_out"):
             n_in = 0
             n_out = 0
+            for community in communities:
+                print(authors, community)
+                if set(authors) <= set(community):
+                    n_in +=1
+                else:
+                    n_out+=1
+            '''
             for i, author1 in enumerate(authors):
                 for author2 in authors[i + 1:]:
                     check = False
@@ -339,8 +347,12 @@ class NMOEA:
                         if author1 in community and author2 in community:
                             n_in += 1
                             check = True
+                        # 아니면 1로 해봤는데 더 안됨.
                     if not check:
                         n_out += 1
+
+            '''
+                    
 
             res.append((n_in, n_out))
 
@@ -388,19 +400,43 @@ class NMOEA:
         return np.array(standardize(res))
 
     def fit(self, population, coauthor_list, labels):
-        # plt.figure(figsize=(7, 7))
-        # plt.plot(true_n_in, true_n_out, "bo")
-        # plt.plot(false_n_in, false_n_out, "ro")
-        # plt.savefig("../output/plot_1_indiv_random.png")
+        #plt.figure(figsize=(14, 7))
+        #plt.plot(true_n_in, true_n_out, "bo")
+        #plt.plot(false_n_in, false_n_out, "ro")
+        #plt.savefig("../output/plot_1_indiv_random_whj.png")
 
+        
         X = self.get_features(population, coauthor_list)
+        np.save('../output/results/features2', X)
         y = np.array(labels)
-
-        print("Fitting svm ...")
-        self.predictor = svm.SVC()
+        np.save('../output/results/labels2',y)
+        
+        '''
+        X = np.load('../output/results/features_set.npy')
+        y = np.load('../output/results/labels_set.npy')
+        print("load done! ")
+        '''
+        #self.predictor = svm.SVC(kernel='linear', C=1.0)
+        self.predictor = svm.SVC(kernel='rbf', C=100, gamma= 10)#'scale')
+        
         self.predictor.fit(X, y)
+        # c=10000, g=100 => 54.78%, 53.61% 나옴 (10444 2775 9290 1621)
+
+        mglearn.plots.plot_2d_separator(self.predictor, X, eps=.5)
+        mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
+        # 서포트 벡터
+        sv = self.predictor.support_vectors_
+        # dual_coef_의 부호에 의해 서포트 벡터의 클래스 레이블이 결정됩니다.
+        sv_labels = self.predictor.dual_coef_.ravel() > 0
+        mglearn.discrete_scatter(sv[:, 0], sv[:, 1], sv_labels, s=1, markeredgewidth=1)
+        plt.show()
+        
         return self.predictor.predict(X)
 
     def eval(self, population, coauthor_list):
+        
         X = self.get_features(population, coauthor_list)
+        np.save('../output/results/features_valid2', X)
+        
+        #X = np.load('../output/results/features_valid_set.npy')
         return self.predictor.predict(X)
