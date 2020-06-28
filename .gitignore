@@ -1,5 +1,6 @@
 *.attrs
-.DS_Store
+*.DS_Store
+*.tar.gz
 
 .vscode/
 __pycache__/

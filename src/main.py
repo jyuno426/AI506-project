@@ -20,6 +20,7 @@ if __name__ == '__main__':
     n, paper_author_data, public_true_data, public_false_data, test = load_dataset()
     true_data = paper_author_data + public_true_data
     random.shuffle(true_data)
+    random.shuffle(public_false_data)
 
     # Split graph_making, train and valid sets
     train_size = int(len(public_false_data) * 0.7)
