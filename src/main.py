@@ -6,9 +6,12 @@ import networkx as nx
 from moea import NMOEA
 from node_embedding import build_node_embedding
 from util import load_dataset, make_graph, compute_accuracy
+import mglearn
 
 random.seed(0)
 np.random.seed(0)
+
+
 
 if __name__ == '__main__':
     # Node name should be sequential from 1
@@ -40,7 +43,7 @@ if __name__ == '__main__':
     nmoea = NMOEA(n, graph, s_dict, d_dict)
     # nmoea.run()
 
-    with open("../output/results/iter65.json") as f:
+    with open("../output/results/iter103.json") as f:
         population = json.load(f)
 
     train_labels = [1] * len(true_train) + [0] * len(false_train)
@@ -52,9 +55,12 @@ if __name__ == '__main__':
     train_pred_labels = nmoea.fit(population, train_set, train_labels)
     compute_accuracy(train_labels, train_pred_labels)
 
+    #plot_decision_function(train_set, train_labels, valid_set, valid_labels, nmoea.predictor)
+
     print("Valid:")
     valid_pred_labels = nmoea.eval(population, valid_set)
     compute_accuracy(valid_labels, valid_pred_labels)
 
-    print("Test:")
-    test_pred_labels = nmoea.eval(population, test)
+    #print("Test:")
+    #test_pred_labels = nmoea.eval(population, test)
+
