@@ -1,5 +1,7 @@
+import random
 import pandas as pd
 import networkx as nx
+from sklearn import preprocessing
 
 
 def load_dataset():
@@ -65,6 +67,7 @@ def make_graph(coauthor_list):
     Return networkx graph based on coauthor_list
     Index of author starts from 1
     """
+    print("Make Graph ...")
     graph = nx.Graph()
 
     for coauthor in coauthor_list:
@@ -73,6 +76,7 @@ def make_graph(coauthor_list):
             for j in range(i + 1, m):
                 graph.add_edge(coauthor[i], coauthor[j])
 
+    print("Make Graph Done!")
     return graph
 
 
@@ -99,23 +103,75 @@ def make_tabular(n_total, coauthor_list, position_encode=False):
     return pd.DataFrame(data=author_dict)
 
 
-def get_pareto_front(points):
+def get_two_random(a, b, ordering=True):
     """
-    points: list of tuples of 2 items
+    Return two distinct random integers i, j in [a, b] s.t. i < j.
     """
+    i, j = 0, 0
+    while i == j:
+        i = random.randint(a, b)
+        j = random.randint(a, b)
 
-    res = []
+    if ordering:
+        return min(i, j), max(i, j)
+    else:
+        return i, j
 
-    points.sort()
-    for x, y in points:
-        while len(res) > 0:
-            if res[-1][0] <= x and res[-1][1] <= y:
-                res.pop()
-            else:
-                break
-        res.append((x, y))
 
-    return res
+def partition(list_in, n):
+    """
+    Partition input list into n chunks in nearly equal size
+    """
+    list_copy = list_in.copy()
+    random.shuffle(list_copy)
+    return [list_copy[i::n] for i in range(n)]
+
+
+def compute_accuracy(true_labels, predictions):
+    tp, tn, fp, fn = 0, 0, 0, 0
+    assert len(true_labels) == len(predictions)
+    for i in range(len(true_labels)):
+        if true_labels[i] == 1 and predictions[i] == 1:
+            tp += 1
+        elif true_labels[i] == 1 and predictions[i] == 0:
+            fn += 1
+        elif true_labels[i] == 0 and predictions[i] == 1:
+            fp += 1
+        elif true_labels[i] == 0 and predictions[i] == 0:
+            tn += 1
+        else:
+            raise Exception("wrong labels: {}, {}".format(
+                true_labels[i], predictions[i]))
+
+    print(tp, tn, fp, fn)
+    acc = (tp + tn) / (tp + tn + fp + fn)
+    print("acc: {}%".format(round(acc * 100, 2)))
+
+
+def means(_list_1d):
+    list_1d = [x for x in _list_1d if x != 0]
+    if len(list_1d) == 0:
+        return [0, 0, 0]
+
+    am, gm, hm = 0, 1, 0
+    for l in list_1d:
+        assert l != 0
+        am += l
+        gm *= pow(l, 1 / len(list_1d))
+        hm += 1 / l
+
+    am /= len(list_1d)
+    if hm > 0:
+        hm = len(list_1d) / hm
+
+    return [am, gm, hm]
+
+
+def standardize(feature_matrix):
+    df = pd.DataFrame(feature_matrix)
+    standard_scaler = preprocessing.StandardScaler()
+    standard_scaler.fit(df)
+    return standard_scaler.transform(df)
 
 
 if __name__ == '__main__':

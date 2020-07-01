@@ -154,17 +154,14 @@ class Expansion:
             res += w
         return res / len(inner_edges)
 
-    def cn(self, inner_edges):
-
 
 if __name__ == '__main__':
-    n, paper_author_data, public_true_data, public_false_data, private_data = load_dataset(
-    )
+    n, paper_author_data, public_true_data, public_false_data, private_data = load_dataset()
 
     n_order = 2
 
-    if not os.path.exists(str(n_order) + "order"):
-        os.mkdir(str(n_order) + "order")
+    if not os.path.exists("../output/" + str(n_order) + "order"):
+        os.mkdir("../output/" + str(n_order) + "order")
 
     paper_author_data.sort(key=lambda x: len(x))
     public_true_data.sort(key=lambda x: len(x))
@@ -204,30 +201,30 @@ if __name__ == '__main__':
     x = np.arange(len(true_scores))
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x, gm_scores)
-    plt.savefig(str(n_order) + "order/true_gm")
+    plt.savefig("../output/" + str(n_order) + "order/true_gm")
 
     gm_scores.sort()
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x[:15000], gm_scores[:15000])
-    plt.savefig(str(n_order) + "order/true_gm_sort")
+    plt.savefig("../output/" + str(n_order) + "order/true_gm_sort")
 
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x, hm_scores)
-    plt.savefig(str(n_order) + "order/true_hm")
+    plt.savefig("../output/" + str(n_order) + "order/true_hm")
 
     hm_scores.sort()
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x[:15000], hm_scores[:15000])
-    plt.savefig(str(n_order) + "order/true_hm_sort")
+    plt.savefig("../output/" + str(n_order) + "order/true_hm_sort")
 
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x, am_scores)
-    plt.savefig(str(n_order) + "order/true_am")
+    plt.savefig("../output/" + str(n_order) + "order/true_am")
 
     am_scores.sort()
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x[:15000], am_scores[:15000])
-    plt.savefig(str(n_order) + "order/true_am_sort")
+    plt.savefig("../output/" + str(n_order) + "order/true_am_sort")
 
     gm_ylim = max(gm_scores)
     gm_sort_ylim = max(gm_scores[:15000])
@@ -253,35 +250,35 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x, gm_scores)
     plt.ylim(top=gm_ylim)
-    plt.savefig(str(n_order) + "order/false_gm")
+    plt.savefig("../output/" + str(n_order) + "order/false_gm")
 
     gm_scores.sort()
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x[:15000], gm_scores[:15000])
     plt.ylim(top=gm_sort_ylim)
-    plt.savefig(str(n_order) + "order/false_gm_sort")
+    plt.savefig("../output/" + str(n_order) + "order/false_gm_sort")
 
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x, hm_scores)
     plt.ylim(top=hm_ylim)
-    plt.savefig(str(n_order) + "order/false_hm")
+    plt.savefig("../output/" + str(n_order) + "order/false_hm")
 
     hm_scores.sort()
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x[:15000], hm_scores[:15000])
     plt.ylim(top=hm_sort_ylim)
-    plt.savefig(str(n_order) + "order/false_hm_sort")
+    plt.savefig("../output/" + str(n_order) + "order/false_hm_sort")
 
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x, am_scores)
     plt.ylim(top=am_ylim)
-    plt.savefig(str(n_order) + "order/false_am")
+    plt.savefig("../output/" + str(n_order) + "order/false_am")
 
     am_scores.sort()
     fig = plt.figure(figsize=(7, 7))
     plt.plot(x[:15000], am_scores[:15000])
     plt.ylim(top=am_sort_ylim)
-    plt.savefig(str(n_order) + "order/false_am_sort")
+    plt.savefig("../output/" + str(n_order) + "order/false_am_sort")
 
     # assert len(true_scores) == len(false_scores)
 
@@ -301,27 +298,27 @@ if __name__ == '__main__':
 
     # fig = plt.figure(figsize=(7, 7))
     # plt.plot(x, gm_scores)
-    # plt.savefig(str(n_order)+"order/gm")
+    # plt.savefig("../output/" + str(n_order)+"order/gm")
 
     # gm_scores.sort()
     # fig = plt.figure(figsize=(7, 7))
     # plt.plot(x, gm_scores)
-    # plt.savefig(str(n_order)+"order/gm_sort")
+    # plt.savefig("../output/" + str(n_order)+"order/gm_sort")
 
     # fig = plt.figure(figsize=(7, 7))
     # plt.plot(x, hm_scores)
-    # plt.savefig(str(n_order)+"order/hm")
+    # plt.savefig("../output/" + str(n_order)+"order/hm")
 
     # hm_scores.sort()
     # fig = plt.figure(figsize=(7, 7))
     # plt.plot(x, hm_scores)
-    # plt.savefig(str(n_order)+"order/hm_sort")
+    # plt.savefig("../output/" + str(n_order)+"order/hm_sort")
 
     # fig = plt.figure(figsize=(7, 7))
     # plt.plot(x, am_scores)
-    # plt.savefig(str(n_order)+"order/am")
+    # plt.savefig("../output/" + str(n_order)+"order/am")
 
     # am_scores.sort()
     # fig = plt.figure(figsize=(7, 7))
     # plt.plot(x, am_scores)
-    # plt.savefig(str(n_order)+"order/am_sort")
+    # plt.savefig("../output/" + str(n_order)+"order/am_sort")
