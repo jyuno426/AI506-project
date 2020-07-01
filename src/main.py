@@ -43,7 +43,7 @@ if __name__ == '__main__':
     nmoea = NMOEA(n, graph, s_dict, d_dict)
     # nmoea.run()
 
-    with open("../iter0.json") as f:
+    with open("../iter500.json") as f:
         population = json.load(f)
 
     train_labels = [1] * len(true_train) + [0] * len(false_train)
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     valid_pred_labels = nmoea.eval(population, valid_set)
     compute_accuracy(valid_labels, valid_pred_labels)
 
-    # print("Test:")
+    print("Test:")
     test_pred_labels = nmoea.eval(population, test)
     with open("../output/answer_private.txt", "w") as f:
         for label in test_pred_labels:
