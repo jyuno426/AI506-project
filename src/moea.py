@@ -336,9 +336,9 @@ class NMOEA:
             for community in communities:
                 print(authors, community)
                 if set(authors) <= set(community):
-                    n_in +=1
+                    n_in += 1
                 else:
-                    n_out+=1
+                    n_out += 1
             '''
             for i, author1 in enumerate(authors):
                 for author2 in authors[i + 1:]:
@@ -352,7 +352,6 @@ class NMOEA:
                         n_out += 1
 
             '''
-                    
 
             res.append((n_in, n_out))
 
@@ -374,7 +373,7 @@ class NMOEA:
             for i, author1 in enumerate(authors):
                 for community in communities:
                     if author1 in community:
-                        s, d = self.fitness_community(community)
+                        # s, d = self.fitness_community(community)
                         # comm_fit_s_1.append(s)
                         # comm_fit_d_1.append(d)
                         comm_len_1.append(len(community))
@@ -403,40 +402,40 @@ class NMOEA:
         #plt.figure(figsize=(14, 7))
         #plt.plot(true_n_in, true_n_out, "bo")
         #plt.plot(false_n_in, false_n_out, "ro")
-        #plt.savefig("../output/plot_1_indiv_random_whj.png")
+        # plt.savefig("../output/plot_1_indiv_random_whj.png")
 
-        
         X = self.get_features(population, coauthor_list)
         np.save('../output/results/features2', X)
         y = np.array(labels)
-        np.save('../output/results/labels2',y)
-        
+        np.save('../output/results/labels2', y)
+
         '''
         X = np.load('../output/results/features_set.npy')
         y = np.load('../output/results/labels_set.npy')
         print("load done! ")
         '''
         #self.predictor = svm.SVC(kernel='linear', C=1.0)
-        self.predictor = svm.SVC(kernel='rbf', C=100, gamma= 10)#'scale')
-        
+        self.predictor = svm.SVC(kernel='rbf', C=1, gamma=1)  # 'scale')
+
         self.predictor.fit(X, y)
         # c=10000, g=100 => 54.78%, 53.61% 나옴 (10444 2775 9290 1621)
 
-        mglearn.plots.plot_2d_separator(self.predictor, X, eps=.5)
-        mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
+        # mglearn.plots.plot_2d_separator(self.predictor, X, eps=.5)
+        # mglearn.discrete_scatter(X[:, 0], X[:, 1], y)
         # 서포트 벡터
-        sv = self.predictor.support_vectors_
+        # sv = self.predictor.support_vectors_
         # dual_coef_의 부호에 의해 서포트 벡터의 클래스 레이블이 결정됩니다.
-        sv_labels = self.predictor.dual_coef_.ravel() > 0
-        mglearn.discrete_scatter(sv[:, 0], sv[:, 1], sv_labels, s=1, markeredgewidth=1)
-        plt.show()
-        
+        # sv_labels = self.predictor.dual_coef_.ravel() > 0
+        # mglearn.discrete_scatter(
+        #     sv[:, 0], sv[:, 1], sv_labels, s=1, markeredgewidth=1)
+        # plt.show()
+
         return self.predictor.predict(X)
 
     def eval(self, population, coauthor_list):
-        
+
         X = self.get_features(population, coauthor_list)
         np.save('../output/results/features_valid2', X)
-        
+
         #X = np.load('../output/results/features_valid_set.npy')
         return self.predictor.predict(X)
